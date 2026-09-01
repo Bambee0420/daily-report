@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>每日业绩汇报录入</title>
+  <style>
+    :root {
+      --primary: #07c160;
+      --primary-dark: #06ad56;
+      --bg: #f5f5f5;
+      --card: #ffffff;
+      --text: #333333;
+      --text-secondary: #666666;
+      --border: #e5e5e5;
+      --amber: #ff8f1f;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    .container { max-width: 480px; margin: 0 auto; padding: 16px; }
+    header { text-align: center; padding: 24px 0 16px; }
+    header h1 { margin: 0; font-size: 22px; font-weight: 600; }
+    header p { margin: 6px 0 0; color: var(--text-secondary); font-size: 14px; }
+
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin: 0 0 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-title .icon { font-size: 18px; }
+    .card-title .badge {
+      margin-left: auto;
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--text-secondary);
+      background: #f2f2f2;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+
+    .form-row { margin-bottom: 14px; }
+    .form-row:last-child { margin-bottom: 0; }
+    label { display: block; font-size: 14px; color: var(--text-secondary); margin-bottom: 6px; }
+    input[type="text"], input[type="number"] {
+      width: 100%;
+      height: 44px;
+      padding: 0 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 16px;
+      color: var(--text);
+      background: #fff;
+      -webkit-appearance: none;
+    }
+    input:focus { outline: none; border-color: var(--primary); }
+    .input-hint { font-size: 12px; color: #999; margin-top: 4px; }
+
+    .total-bar {
+      background: linear-gradient(135deg, #07c160 0%, #06ad56 100%);
+      color: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px 12px;
+      margin-bottom: 12px;
+    }
+    .total-item { text-align: center; }
+    .total-item .num { font-size: 26px; font-weight: 700; }
+    .total-item .label { font-size: 12px; opacity: 0.92; margin-top: 2px; }
+    .total-item .sub { font-size: 11px; opacity: 0.75; margin-top: 1px; }
+
+    .subtotal {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #fff8ed;
+      border: 1px solid #ffe0b2;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-top: 12px;
+      font-size: 14px;
+    }
+    .subtotal .val { font-weight: 700; color: var(--amber); font-size: 17px; }
+
+    .output-card { background: #f9f9f9; }
+    textarea {
+      width: 100%;
+      min-height: 280px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 15px;
+      line-height: 1.6;
+      resize: vertical;
+      background: #fff;
+      color: var(--text);
+      font-family: inherit;
+    }
+
+    .btn {
+      width: 100%;
+      height: 46px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 12px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:active { background: var(--primary-dark); }
+    .btn-secondary { background: #fff; color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:active { background: #f2f2f2; }
+
+    .toast {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.75);
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s;
+      z-index: 100;
+    }
+    .toast.show { opacity: 1; }
+
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .split .form-row { margin-bottom: 0; }
+
+    footer { text-align: center; font-size: 12px; color: #999; padding: 20px 0 30px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>每日业绩汇报录入</h1>
+      <p>填写各平台数据，自动拆分汇总</p>
+    </header>
+
+    <div class="total-bar">
+      <div class="total-item">
+        <div class="num" id="totalCustomers">0</div>
+        <div class="label">到店客流</div>
+        <div class="sub">前台+美团+抖音客流</div>
+      </div>
+      <div class="total-item">
+        <div class="num" id="totalIncome">¥0</div>
+        <div class="label">总收入</div>
+      </div>
+      <div class="total-item">
+        <div class="num" id="sumTicket">0</div>
+        <div class="label">前台单日门票</div>
+        <div class="sub">前台+美团+抖音</div>
+      </div>
+      <div class="total-item">
+        <div class="num" id="sumExp">0</div>
+        <div class="label">前台体验课</div>
+        <div class="sub">前台+美团+抖音</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">🏪</span>门店信息</div>
+      <div class="form-row">
+        <label>门店名称</label>
+        <input type="text" data-key="storeName" value="滨江店" placeholder="如：滨江店" />
+      </div>
+      <div class="form-row">
+        <label>截止时间点</label>
+        <input type="text" data-key="cutoffTime" value="22:00" placeholder="22:00" />
+      </div>
+      <div class="form-row">
+        <label>店长姓名（用于 @ 提醒）</label>
+        <input type="text" data-key="managerName" value="王璐瑶" placeholder="如：王璐瑶" />
+        <div class="input-hint">汇报文案末尾会自动带上 @店长，粘贴到群里即可提醒店长查看</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">🧾</span>前台数据 <span class="badge">仅前台手动部分</span></div>
+      <div class="split">
+        <div class="form-row">
+          <label>单日门票</label>
+          <input type="number" data-key="frontTicket" value="0" min="0" />
+        </div>
+        <div class="form-row">
+          <label>体验课</label>
+          <input type="number" data-key="frontExp" value="0" min="0" />
+        </div>
+      </div>
+      <div class="split" style="margin-top:14px;">
+        <div class="form-row">
+          <label>时间卡（人）</label>
+          <input type="number" data-key="timeCard" value="0" min="0" />
+        </div>
+        <div class="form-row">
+          <label>私教课</label>
+          <input type="number" data-key="privateCount" value="0" min="0" />
+        </div>
+      </div>
+      <div class="split" style="margin-top:14px;">
+        <div class="form-row">
+          <label>团课</label>
+          <input type="number" data-key="groupCount" value="0" min="0" />
+        </div>
+        <div class="form-row">
+          <label>前台客流</label>
+          <input type="number" data-key="frontFlow" value="0" min="0" />
+          <div class="input-hint">提取今日小程序活跃数据</div>
+        </div>
+      </div>
+      <div class="form-row" style="margin-top:14px;">
+        <label>台账销售（¥）</label>
+        <input type="number" data-key="frontDeskRevenue" value="0" min="0" step="0.01" />
+        <div class="input-hint">桌面 APP 工银商户之家 - 今日营收</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">💚</span>小程序数据</div>
+      <div class="form-row">
+        <label>小程序业绩收入（¥）</label>
+        <input type="number" data-key="miniRevenue" value="0" min="0" step="0.01" />
+        <div class="input-hint">数据中心 - 数据概况</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">💛</span>美团数据</div>
+      <div class="split">
+        <div class="form-row">
+          <label>单日门票</label>
+          <input type="number" data-key="mtTicket" value="0" min="0" />
+        </div>
+        <div class="form-row">
+          <label>体验课</label>
+          <input type="number" data-key="mtExp" value="0" min="0" />
+        </div>
+      </div>
+      <div class="form-row" style="margin-top:14px;">
+        <label>美团收入（¥）</label>
+        <input type="number" data-key="mtRevenue" value="0" min="0" step="0.01" />
+        <div class="input-hint">桌面 APP 美团经营宝 - 财务管理 - 今日收益</div>
+      </div>
+      <div class="subtotal">
+        <span>美团客流（门票+体验课）</span>
+        <span class="val" id="mtFlow">0</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">🖤</span>抖音数据</div>
+      <div class="split">
+        <div class="form-row">
+          <label>单日门票</label>
+          <input type="number" data-key="dyTicket" value="0" min="0" />
+        </div>
+        <div class="form-row">
+          <label>体验课</label>
+          <input type="number" data-key="dyExp" value="0" min="0" />
+        </div>
+      </div>
+      <div class="form-row" style="margin-top:14px;">
+        <label>抖音收入（¥）</label>
+        <input type="number" data-key="dyRevenue" value="0" min="0" step="0.01" />
+        <div class="input-hint">桌面 APP 抖音来客 - 去管理版 - 核销金额</div>
+      </div>
+      <div class="subtotal">
+        <span>抖音客流（门票+体验课）</span>
+        <span class="val" id="dyFlow">0</span>
+      </div>
+    </div>
+
+    <div class="card output-card">
+      <div class="card-title"><span class="icon">📋</span>汇报文案</div>
+      <textarea id="reportText" readonly></textarea>
+      <button class="btn btn-primary" id="copyBtn"><span>📄</span> 复制汇报文案</button>
+      <button class="btn btn-secondary" id="resetBtn"><span>🔄</span> 清空今日数据</button>
+    </div>
+
+    <footer>每晚 21:30 群内提醒填写 · 22:00 提醒店长确认</footer>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    (function() {
+      const LS_KEY = 'dailyReport_' + new Date().toISOString().slice(0,10);
+      const DEFAULTS = {
+        storeName: '滨江店',
+        cutoffTime: '22:00',
+        managerName: '王璐瑶',
+        frontTicket: 0, frontExp: 0, timeCard: 0, privateCount: 0, groupCount: 0,
+        frontFlow: 0,
+        frontDeskRevenue: 0,
+        miniRevenue: 0,
+        mtTicket: 0, mtExp: 0, mtRevenue: 0,
+        dyTicket: 0, dyExp: 0, dyRevenue: 0
+      };
+
+      function el(key) { return document.querySelector('[data-key="' + key + '"]'); }
+      function getVal(key) {
+        const node = el(key);
+        if (!node) return DEFAULTS[key];
+        if (node.type === 'number') {
+          const v = parseFloat(node.value);
+          return isNaN(v) ? 0 : v;
+        }
+        return node.value.trim();
+      }
+
+      function load() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(LS_KEY));
+          if (saved) {
+            Object.keys(DEFAULTS).forEach(key => {
+              const node = el(key);
+              if (node && saved[key] !== undefined) node.value = saved[key];
+            });
+          }
+        } catch(e) {}
+      }
+
+      function save() {
+        const data = {};
+        Object.keys(DEFAULTS).forEach(key => { data[key] = getVal(key); });
+        localStorage.setItem(LS_KEY, JSON.stringify(data));
+      }
+
+      function compute() {
+        const frontTicket = getVal('frontTicket');
+        const frontExp    = getVal('frontExp');
+        const timeCard    = getVal('timeCard');
+        const privateCnt  = getVal('privateCount');
+        const groupCnt    = getVal('groupCount');
+        const frontFlow   = getVal('frontFlow');
+        const mtTicket = getVal('mtTicket'), mtExp = getVal('mtExp');
+        const dyTicket = getVal('dyTicket'), dyExp = getVal('dyExp');
+
+        const sumTicket = frontTicket + mtTicket + dyTicket;
+        const sumExp    = frontExp + mtExp + dyExp;
+        const mtFlow = mtTicket + mtExp;
+        const dyFlow = dyTicket + dyExp;
+
+        const totalCustomers = frontFlow + mtFlow + dyFlow;
+        const totalIncome = getVal('miniRevenue') + getVal('frontDeskRevenue')
+                          + getVal('mtRevenue') + getVal('dyRevenue');
+
+        return { sumTicket, sumExp, mtFlow, dyFlow, frontFlow, totalCustomers, totalIncome };
+      }
+
+      function fmt(v) { return String(Number(v).toFixed(v % 1 === 0 ? 0 : 2)); }
+
+      function formatReport() {
+        const s = getVal('storeName');
+        const t = getVal('cutoffTime');
+        const m = getVal('managerName');
+        const c = compute();
+        const v = (k) => fmt(getVal(k));
+
+        return `${s}截止：${t}
+到店客流：${fmt(c.totalCustomers)}
+总收入：${fmt(c.totalIncome)}
+小程序业绩收入：${v('miniRevenue')}
+前台单日门票：${fmt(c.sumTicket)}人
+前台体验课：${fmt(c.sumExp)}
+前台时间卡：${v('timeCard')}人
+前台私教课：${v('privateCount')}
+前台团课：${v('groupCount')}
+美团客流：${fmt(c.mtFlow)}
+抖音客流：${fmt(c.dyFlow)}
+抖音收入：${v('dyRevenue')}
+美团收入：${v('mtRevenue')}
+前台台账销售：${v('frontDeskRevenue')}
+
+@${m} 请查收今日业绩`;
+      }
+
+      function update() {
+        save();
+        const c = compute();
+        document.getElementById('totalCustomers').textContent = fmt(c.totalCustomers);
+        document.getElementById('totalIncome').textContent = '¥' + fmt(c.totalIncome);
+        document.getElementById('sumTicket').textContent = fmt(c.sumTicket);
+        document.getElementById('sumExp').textContent = fmt(c.sumExp);
+        document.getElementById('mtFlow').textContent = fmt(c.mtFlow);
+        document.getElementById('dyFlow').textContent = fmt(c.dyFlow);
+        document.getElementById('reportText').value = formatReport();
+      }
+
+      function showToast(msg) {
+        const toast = document.getElementById('toast');
+        toast.textContent = msg;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 1800);
+      }
+
+      function copyReport() {
+        const text = document.getElementById('reportText').value;
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(text).then(() => showToast('已复制到剪贴板'));
+        } else {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          showToast('已复制到剪贴板');
+        }
+      }
+
+      function reset() {
+        if (!confirm('确定清空今日数据？')) return;
+        Object.keys(DEFAULTS).forEach(key => {
+          const node = el(key);
+          if (node) node.value = DEFAULTS[key];
+        });
+        update();
+        showToast('已清空');
+      }
+
+      document.querySelectorAll('input').forEach(input => {
+        input.addEventListener('input', update);
+      });
+      document.getElementById('copyBtn').addEventListener('click', copyReport);
+      document.getElementById('resetBtn').addEventListener('click', reset);
+
+      load();
+      update();
+    })();
+  </script>
+</body>
+</html>
