@@ -270,6 +270,11 @@
         <input type="number" data-key="mtRevenue" value="0" min="0" step="0.01" />
         <div class="input-hint">桌面 APP 美团经营宝 - 财务管理 - 今日收益</div>
       </div>
+      <div class="form-row" style="margin-top:14px;">
+        <label>大众/美团好评数量</label>
+        <input type="number" data-key="mtPraise" value="0" min="0" />
+        <div class="input-hint">当天新增的好评条数</div>
+      </div>
       <div class="subtotal">
         <span>美团客流（门票+体验课）</span>
         <span class="val" id="mtFlow">0</span>
@@ -322,7 +327,7 @@
         frontFlow: 0,
         frontDeskRevenue: 0,
         miniRevenue: 0,
-        mtTicket: 0, mtExp: 0, mtRevenue: 0,
+        mtTicket: 0, mtExp: 0, mtRevenue: 0, mtPraise: 0,
         dyTicket: 0, dyExp: 0, dyRevenue: 0
       };
 
@@ -400,6 +405,7 @@
 抖音收入：${v('dyRevenue')}
 美团收入：${v('mtRevenue')}
 前台台账销售：${v('frontDeskRevenue')}
+大众/美团好评：${v('mtPraise')}
 
 @${m} 请查收今日业绩`;
       }
